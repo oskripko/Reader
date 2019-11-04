@@ -13,12 +13,8 @@ const (
 	workersNumber = 5
 )
 
-type job struct {
-	text string
-}
-
 func GetNumberOfAscii(paths []os.FileInfo, dirName string) sync.Map {
-	jobs := make(chan job, 5)
+	jobs := make(chan string)
 
 	wg := new(sync.WaitGroup)
 	jobsWG := new(sync.WaitGroup)
@@ -29,10 +25,10 @@ func GetNumberOfAscii(paths []os.FileInfo, dirName string) sync.Map {
 		wg.Add(1)
 		go addOccurrencesNumber(jobs, &counters, wg)
 	}
-	for i := range paths {
+	for _, currentPath := range paths {
 		jobsWG.Add(1)
-		go func(i int) {
-			file, err := os.Open(path.Join(dirName, paths[i].Name()))
+		go func(currentPath os.FileInfo) {
+			file, err := os.Open(path.Join(dirName, currentPath.Name()))
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -42,9 +38,9 @@ func GetNumberOfAscii(paths []os.FileInfo, dirName string) sync.Map {
 
 			scanner := bufio.NewScanner(file)
 			for scanner.Scan() {
-				jobs <- job{text: scanner.Text()}
+				jobs <- scanner.Text()
 			}
-		}(i)
+		}(currentPath)
 	}
 
 	go func() {
@@ -55,11 +51,11 @@ func GetNumberOfAscii(paths []os.FileInfo, dirName string) sync.Map {
 	return counters
 }
 
-func addOccurrencesNumber(jobs <-chan job, counters *sync.Map, wg *sync.WaitGroup, ) {
+func addOccurrencesNumber(jobs <-chan string, counters *sync.Map, wg *sync.WaitGroup, ) {
 	defer wg.Done()
 
 	for line := range jobs {
-		for _, value := range line.text {
+		for _, value := range line {
 			if unicode.IsSpace(value) {
 				continue
 			}

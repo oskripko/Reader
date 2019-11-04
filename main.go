@@ -8,7 +8,7 @@ import (
 
 
 func main() {
-	dirName := "counter"
+	dirName := "/users/olga/projects"
 	files, err := ioutil.ReadDir(dirName)
 	if err != nil {
 		fmt.Print(err)
